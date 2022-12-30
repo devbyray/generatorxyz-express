@@ -7,13 +7,21 @@
   "author": "Render Developers",
   "license": "MIT",
   "private": false,
+  "type": "module",
   "scripts": {
     "start": "node app.js"
   },
   "dependencies": {
-    "express": "^4.16.3"
+    "cheerio": "^1.0.0-rc.12",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.16.3",
+    "isomorphic-fetch": "^3.0.0"
   },
   "engines": {
     "node": ">=14"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
   }
 }

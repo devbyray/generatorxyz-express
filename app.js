@@ -1,61 +1,75 @@
-const express = require("express");
-const app = express();
-const port = process.env.PORT || 3001;
+import dotenv from 'dotenv'
+dotenv.config()
+import express from 'express'
+import cors from 'cors'
+import { pageContent, socialMediaGenerator } from './lib/index.js'
 
-app.get("/", (req, res) => res.send({
-  message: 'Hello World'
-}));
+const app = express()
+const port = process.env.PORT || 3001
+app.use(express.json())
+app.use(cors())
+const allowlist = [
+	'http://localhost:3000',
+	'http://generatorxyz.com',
+	'https://generatorxyz.com',
+	'https://www.generatorxyz.com',
+	'https://generatorxyz.com',
+	'https://www.generatorxyz.com',
+	'https://generatorxyz.netlify.app'
+]
+const corsOptionsDelegate = function (req, callback) {
+	let corsOptions
+	if (allowlist.indexOf(req.header('Origin')) !== -1 || req.header('Origin')?.endsWith('netlify.app')) {
+		corsOptions = { origin: true } // reflect (enable) the requested origin in the CORS response
+	} else {
+		corsOptions = { origin: false } // disable CORS for this request
+	}
+	callback(null, corsOptions) // callback expects two parameters: error and options
+}
+app.options('*', cors(corsOptionsDelegate))
+app.get('/', (req, res) => {
+	res.send({
+		message: 'Hello, World!'
+	})
+})
 
-app.listen(port, () => console.log(`Example app listening on port ${port}!`));
+app.post('/social-generator', cors(), async (req, res) => {
+	const { content, type, amount } = req.body
+	console.log(req)
 
+	try {
+		const { statusCode, body } = await socialMediaGenerator(content, type, amount)
 
-const html = `
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Hello from Render!</title>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-    <script>
-      setTimeout(() => {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-          disableForReducedMotion: true
-        });
-      }, 500);
-    </script>
-    <style>
-      @import url("https://p.typekit.net/p.css?s=1&k=vnd5zic&ht=tk&f=39475.39476.39477.39478.39479.39480.39481.39482&a=18673890&app=typekit&e=css");
-      @font-face {
-        font-family: "neo-sans";
-        src: url("https://use.typekit.net/af/00ac0a/00000000000000003b9b2033/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n7&v=3") format("woff2"), url("https://use.typekit.net/af/00ac0a/00000000000000003b9b2033/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n7&v=3") format("woff"), url("https://use.typekit.net/af/00ac0a/00000000000000003b9b2033/27/a?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n7&v=3") format("opentype");
-        font-style: normal;
-        font-weight: 700;
-      }
-      html {
-        font-family: neo-sans;
-        font-weight: 700;
-        font-size: calc(62rem / 16);
-      }
-      body {
-        background: white;
-      }
-      section {
-        border-radius: 1em;
-        padding: 1em;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        margin-right: -50%;
-        transform: translate(-50%, -50%);
-      }
-    </style>
-  </head>
-  <body>
-    <section>
-      Hello from Render!
-    </section>
-  </body>
-</html>
-`
+		res.status(statusCode).send({
+			body
+		})
+	} catch (error) {
+		res.status(500).send({
+			error
+		})
+	}
+})
+
+app.get('/page-content', cors(corsOptionsDelegate), async (req, res) => {
+	const url = req.query?.url
+	if (!url && url?.length > 0) {
+		res.status(400).send({ error: 'No URL provided' })
+	}
+	console.log({ url })
+
+	try {
+		const { statusCode, body } = await pageContent(url)
+
+		res.status(statusCode).send({
+			body
+		})
+	} catch (error) {
+		res.status(500).send({
+			error
+		})
+	}
+})
+
+app.listen(port, () => {
+	console.log(`Application listening on port ${port}`)
+})
